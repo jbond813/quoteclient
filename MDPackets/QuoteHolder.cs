@@ -25,13 +25,21 @@ namespace MDPackets
         public double Stop = 0;
         public static StreamWriter Logger;
         public bool Closing = false;
+        public double LimitPrice;
+        public int LimitOrderID;
+        public int LimitOrderMyID;
+        public int OpeningOrderMyID;
+        public int OpeningOrderID;
         public void PostExec(string Symbol,int shares, double Price)
         {
             ExecutionPrice = Price;
             OpenShares += shares;
-            Stop = PrevClose + .02;
+            //Stop = PrevClose + .02;
+            //Stop = Price -.05; //TESTING USE LINE ABOVE
+            Stop = 0;
             ExecutionTime = DateTime.Now;
             Logger.WriteLine($"Execution Posted {Symbol} {shares} {Price.ToString("0.00")} stop {Stop}");
+            Console.WriteLine($"Execution Posted {Symbol} {shares} {Price.ToString("0.00")} stop {Stop}");
         }
         public class Candle
         {
@@ -77,7 +85,7 @@ namespace MDPackets
                 P1 = Current;
                 Current = new Candle() { time = DateTime.Now, High  = Double.MinValue, Low = Double.MaxValue};
                 Current.Update(p);
-                //Console.WriteLine($"{p.Symbol} {P1}");
+                Console.WriteLine($"{p.Symbol} {P1}");
             }
             if(OpenShares > 0 && (DateTime.Now - ExecutionTime).TotalSeconds > 10) //TEST ONLY should be 75
             {
@@ -85,15 +93,17 @@ namespace MDPackets
                 {
                     if (P1.Low != Double.MaxValue)
                     {
-                        double how = P1.Low - (ATR * .03);
+                        //double how = P1.Low - (ATR * .15);
+                        double how = P1.Low; //Testing
                         if(how > Stop)
                         {
                             Logger.WriteLine($"{p.Symbol} stop moving from {Stop} to {how}");
+                            Console.WriteLine($"!!!!!STOP{p.Symbol} stop moving from {Stop} to {how}");
                             Stop = how;
                         }
                         else
                         {
-                            if (p.Price < Stop)
+                            if (Stop != 0 && p.Price < Stop)
                             {
                                 qtyToSell = OpenShares;
                                 OpenShares = 0;

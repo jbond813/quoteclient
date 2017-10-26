@@ -23,11 +23,6 @@ namespace MDPackets
         }
         private DateTime time;
 
-        public DateTime Time
-        {
-            get { return getTime(rawPayload, 0); }
-            set { time = value; }
-        }
         private double bid;
 
         public double Bid
@@ -36,7 +31,6 @@ namespace MDPackets
                 bid = getPrice(rawPayload, 14);
                 return bid;
             }
-            set { bid = value; }
         }
         private double ask;
 
@@ -46,7 +40,6 @@ namespace MDPackets
                 ask = getPrice(rawPayload, 22);
                 return ask; 
             }
-            set { ask = value; }
         }
         private int bidSize;
 
@@ -56,7 +49,6 @@ namespace MDPackets
                 bidSize = BitConverter.ToInt32(rawPayload, 30);
                 return bidSize;
             }
-            set { bidSize = value; }
         }
         private int askSize;
 
@@ -66,7 +58,6 @@ namespace MDPackets
                 askSize = BitConverter.ToInt32(rawPayload, 34);
                 return askSize;
             }
-            set { askSize = value; }
         }
         private String symbol;
 
@@ -76,14 +67,12 @@ namespace MDPackets
                 symbol = ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0);
                 return symbol;
             }
-            set { symbol = value; }
         }
         private DateTime myVar;
 
-        public DateTime MyProperty
+        public DateTime Time
         {
             get { return getTime(rawPayload,2); }
-            set { myVar = value; }
         }
 
 
@@ -105,8 +94,8 @@ namespace MDPackets
             sb.Append(BidSize);
             sb.Append(" AskSize=");
             sb.Append(AskSize);
-            sb.Append(" MyProperty=");
-            sb.Append(MyProperty);
+            sb.Append(" Time=");
+            sb.Append(Time);
             return sb.ToString();
         }
     }

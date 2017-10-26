@@ -12,25 +12,32 @@ using System.Collections.Concurrent;
 
 namespace quoteclient
 {
-    class config
+    static class config
     {
-        public static string directory = @"e:\";
+        public static string directory;// = @"d:\";
+        //public static string directory = @"e:\";
         public static IPEndPoint quoteServerEP = new IPEndPoint(IPAddress.Parse("10.101.3.206"), 19100);
         //public static IPEndPoint quoteServerEP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5555);
-        public static byte[] logonRequest = File.ReadAllBytes(directory + "rawconnect.dat");
+        public static byte[] getlogonRequest() {
+            return File.ReadAllBytes(directory + "rawconnect.dat");
+        }
         //public static IPEndPoint quoteServerEP = new IPEndPoint(IPAddress.Parse("10.101.3.217"), 7400);
-        public static byte[] zeroRequest = File.ReadAllBytes(directory + "raw0refresh.dat");
-        public static byte[] symbolRequest = File.ReadAllBytes(directory + "rawpgrefresh.dat");
+        public static byte[] getzeroRequest() {
+            return File.ReadAllBytes(directory + "raw0refresh.dat");
+        }
+        public static byte[] getsymbolRequest() {
+            return File.ReadAllBytes(directory + "rawpgrefresh.dat");
+        }
         public static void updateSymbol(string symbol)
         {
             byte[] sym = ASCIIEncoding.ASCII.GetBytes(symbol);
-            Array.Copy(sym, 0, symbolRequest, 4, sym.Length);
-            symbolRequest[sym.Length + 4] = 0;
+            Array.Copy(sym, 0, getsymbolRequest(), 4, sym.Length);
+            getsymbolRequest()[sym.Length + 4] = 0;
         }
         public static string[] GetSymbols()
         {
             List<string> symbols = new List<string>();
-            symbols.AddRange((from s in File.ReadAllLines($@"e:\symbolinfo{DateTime.Now.ToString("yyyyMMdd")}.txt") select s.Split(',')[0]));
+            symbols.AddRange((from s in File.ReadAllLines($@"{config.directory}symbolinfo{DateTime.Now.ToString("yyyyMMdd")}.txt") select s.Split(',')[0]));
             //symbols.AddRange((from s in File.ReadAllLines(@"c:\users\scott\downloads\nasdaq.csv") select s.Split(',')[0]).Skip(1));
             //symbols.AddRange((from s in File.ReadAllLines(@"c:\users\scott\downloads\nyse.csv") select s.Split(',')[0]).Skip(1));
             //symbols.AddRange((from s in File.ReadAllLines(@"c:\users\scott\downloads\amex.csv") select s.Split(',')[0]).Skip(1));
@@ -44,10 +51,13 @@ namespace quoteclient
         static Dictionary<string, DateTime> outstanding = new Dictionary<string, DateTime>();
         static void Main(string[] args)
         {
+            if (args.Length > 0) config.directory = $"{args[0]}:\\";
+            else config.directory = "d:\\";
+            StatusListener l = new StatusListener(dict);
             string[] symbols = config.GetSymbols();
             //symbols = (from s in symbols select s).Skip(2500).Take(1000).ToArray();
-            File.WriteAllLines(@"e:\symbs.txt",symbols);
-            Packet.audit = File.OpenWrite(@"e:\audit" + DateTime.Now.ToString("HHmmss") + ".bin");
+            File.WriteAllLines($@"{config.directory}fff\symbs.txt",symbols);
+            Packet.audit = File.OpenWrite($@"{config.directory}fff\audit" + DateTime.Now.ToString("HHmmss") + ".bin");
             TcpClient cl = new TcpClient();
             cl.Connect(config.quoteServerEP);
             //cl.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5555));
@@ -58,7 +68,7 @@ namespace quoteclient
             str.Write(key, 0, 8);
             str.Flush();
             //str.Write(connect, 0, connect.Length);
-            str.Write(config.logonRequest, 0, config.logonRequest.Length);
+            str.Write(config.getlogonRequest(), 0, config.getlogonRequest().Length);
             str.Flush();
             Packet.GetPacket(str);
             //str.Write(config.zeroRequest, 0, config.zeroRequest.Length);
@@ -78,8 +88,8 @@ namespace quoteclient
                 string symbol = s.Split(' ')[0];
                 dict[symbol] = qh;
                 //byte[] req = { 0x10, 0x00, 0xbd, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-                byte[] req = new byte[config.symbolRequest.Length];
-                Array.Copy(config.symbolRequest, req, req.Length);
+                byte[] req = new byte[config.getsymbolRequest().Length];
+                Array.Copy(config.getsymbolRequest(), req, req.Length);
                 Array.Copy(ASCIIEncoding.ASCII.GetBytes(symbol), 0, req, 4, symbol.Length);
                 str.Write(req, 0, req.Length);
                 //Console.WriteLine("subscribing " + symbol);
@@ -122,19 +132,110 @@ namespace quoteclient
                 {
                     Console.WriteLine(message);
                 }
-                if(message.StartsWith("TM_NEW_EXECUTION"))
+                if (message.StartsWith("SENTORDER"))
+                {
+                    string[] toks = message.Split('|');
+                    string symbol = toks[1];
+                    int myid = Int32.Parse(toks[2]);
+                    int theirid = Int32.Parse(toks[3]);
+                    if (dict.ContainsKey(symbol)) {
+                        QuoteHolder qh = dict[symbol];
+                        Console.WriteLine($"SO moid{qh.OpeningOrderMyID} mLid{qh.LimitOrderMyID} mid{myid} thid{theirid}");
+                        if (qh.LimitOrderMyID == myid)
+                        {
+                            qh.LimitOrderID = theirid;
+                        }
+                        if (qh.OpeningOrderMyID == myid)
+                        {
+                            qh.OpeningOrderID = theirid;
+                        }
+                    }
+                    if (OrderMap.ContainsKey(myid))
+                    {
+                        OrderMap[myid] = theirid;
+                    }
+                }
+                //if (message.StartsWith("NEWORDER"))
+                //{
+                //    //string[] toks = message.Split('|');
+                //    //string symbol = toks[1];
+                //    //int myid = Int32.Parse(toks[2]);
+                //    //int theirid = Int32.Parse(toks[3]);
+                //    if (dict.ContainsKey(symbol))
+                //    {
+                //        QuoteHolder qh = dict[symbol];
+                //        if (qh.MyID == myid)
+                //        {
+                //            qh.LimitOrderID = theirid;
+                //        }
+                //    }
+                //    if (OrderMap.ContainsKey(myid))
+                //    {
+                //        OrderMap[myid] = theirid;
+                //    }
+                //}
+                if (message.StartsWith("DEAD"))
+                {
+                    string[] toks = message.Split('|');
+                    string symbol = toks[1];
+                    int clientID = Int32.Parse(toks[2]);
+                    char side = toks[3][0];
+                    int quantity = Int32.Parse(toks[4]);
+                    int openQuantity = Int32.Parse(toks[5]);
+                    Console.WriteLine("Dead Message");
+                    if (dict.ContainsKey(symbol))
+                    {
+                        QuoteHolder qh = dict[symbol];
+                        Console.WriteLine($"{qh.OpeningOrderID}");
+                        if (qh.OpeningOrderID == clientID)
+                        {
+                            int sharesToClose = quantity - openQuantity;
+                            char closeSide = side == 'B' ? 'S' : 'B';
+                            double TargetPrice = qh.ExecutionPrice + .10;
+                            string m = $"{closeSide}|{symbol}|{0}|{0}|0|{TargetPrice.ToString("0.00")}|0|0|DAY|{OPGOrderID}|{sharesToClose}"; //TESTING = shour be OPG
+                            qh.LimitOrderMyID = OPGOrderID;
+                            qh.LimitPrice = TargetPrice;
+                            OrderMap[OPGOrderID] = 0;
+                            OPGOrderID++;
+                            //qhx.PostExec(sym, 100, TargetPrice);
+                            Console.WriteLine(m);
+                            sendMessage(m);
+                        }
+                    }
+                }
+                if (message.StartsWith("TM_NEW_EXECUTION"))
                 {
                     string[] toks = message.Split('|');
                     string symbol = toks[1];
                     double price = double.Parse(toks[2]);
                     int execQty = Int32.Parse(toks[3]);
                     int posQty = Int32.Parse(toks[4]);
+                    char side = toks[5][0];
+                    int clientOrderID =Int32.Parse(toks[6]);
                     if (dict.ContainsKey(symbol))
                     {
                         QuoteHolder qh = dict[symbol];
-                        qh.PostExec(symbol, execQty, price);
+                        if(qh.OpeningOrderID == clientOrderID)
+                        {
+                            qh.PostExec(symbol, execQty, price);
+                        }
+                        //if (OrderMap.Values.Contains(clientOrderID))
+                        //{
+                        //    qh.PostExec(symbol, execQty, price);
+                        //}
+                        double TargetPrice = price + qh.ATR;
+                        //if (qh.LimitPrice == 0) //this prevents double closing order
+                        //{
+                        //    string m = $"S|{symbol}|{0}|{0}|0|{TargetPrice.ToString("0.00")}|0|0|DAY|{OPGOrderID}|{execQty}"; //TESTING = shour be OPG
+                        //    qh.LimitOrderMyID = OPGOrderID;
+                        //    qh.LimitPrice = TargetPrice;
+                        //    OrderMap[OPGOrderID] = 0;
+                        //    OPGOrderID++;
+                        //    //qhx.PostExec(sym, 100, TargetPrice);
+                        //    Console.WriteLine(m);
+                        //    sendMessage(m);
+                        //}
                     }
-
                 }
             }
         }
@@ -174,7 +275,7 @@ namespace quoteclient
             DateTime dt = DateTime.Now;
             DateTime ldt = DateTime.Now;
             QuoteHolder qh;
-            QuoteHolder.Logger = new StreamWriter($@"e:\Q{DateTime.Now.ToString("HHmmss")}.txt");
+            QuoteHolder.Logger = new StreamWriter($@"{config.directory}fff\Q{DateTime.Now.ToString("HHmmss")}.txt");
             new Thread(t => {
                 Thread.Sleep(1000);
                 QuoteHolder.Logger.Flush();
@@ -234,7 +335,7 @@ namespace quoteclient
                             string ts = tp.Symbol;
                             qh = dict[ts];
                             int QtyToSell = qh.ProcessTrade(tp);
-                            Console.WriteLine($"{tp.Symbol} process Trade returned {QtyToSell}");
+                            //Console.WriteLine($"{tp.Symbol} process Trade returned {QtyToSell}");
                             if(QtyToSell > 0 && !qh.Closing && !ExistingPosition.ContainsKey(ts))
                             {
                                 QuoteHolder qhx = dict[tp.Symbol];
@@ -243,8 +344,14 @@ namespace quoteclient
                                 double Ask = qhx.L1 != null ? qhx.L1.Ask : snap.Ask;
                                 double Bid = qhx.L1 != null ? qhx.L1.Bid : snap.Bid;
                                 double TargetPrice = Bid - .03; //TESTING DELETE THIS LINE
-                                string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY"; //TESTING = shour be OPG
-                                                                                                                                                                                             //qhx.PostExec(sym, 100, TargetPrice);
+                                //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY"; //TESTING = shour be OPG
+                                //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}"; //TESTING = shour be OPG
+                                string m = $"STOP|{tp.Symbol}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{qhx.LimitOrderID}|{QtyToSell}|S|{qhx.OpeningOrderID}"; //TESTING = shour be OPG
+                                Console.WriteLine($"STOP {tp.Symbol} stopped out {tp.Price} stopPrice {qhx.Stop}");
+                                OrderMap[OPGOrderID] = 0;
+                                OPGOrderID++;
+
+                                //qhx.PostExec(sym, 100, TargetPrice);
                                 Console.WriteLine(m);
                                 qh.Closing = true;
                                 sendMessage(m);
@@ -278,6 +385,7 @@ namespace quoteclient
                         case Packet.PacketType.M_BOOK_DELETE_QUOTE:
                         case Packet.PacketType.M_STOCK_IMBALANCE_INDICATOR:
                         case Packet.PacketType.M_BOOK_ORDER_CANCELED:
+                            //Console.WriteLine("Order Cancelled");
                             break;
                         default:
                             //Console.WriteLine(p);
@@ -290,11 +398,16 @@ namespace quoteclient
                 }
             }
         }
-
+        private static ConcurrentDictionary<int,int> OrderMap = new ConcurrentDictionary<int, int>();
+        private static HashSet<int> Limit = new HashSet<int>();
+        private static int OPGOrderID = 20000000 + (int)(DateTime.Now.Ticks % 9999);
         private static void ExecuteOPG()
         {
+            int countSent = 0;
+
             Console.WriteLine($"window open {DateTime.Now}");
             T92750 = true;
+
             foreach (string sym in dict.Keys)
             {
                 QuoteHolder qhx = dict[sym];
@@ -316,12 +429,19 @@ namespace quoteclient
                     //if (qhx.Volume < 100 && Ask > snap.Close)
                     if (true && !ExistingPosition.ContainsKey(sym)) //TESTING USE ABOVE LINE
                     {
-                        double TargetPrice = snap.Close - (qhx.ATR * .25);
-                        TargetPrice = Ask + .03; //TESTING DELETE THIS LINE
-                        string m = $"B|{sym}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY"; //TESTING = shour be OPG
-                        //qhx.PostExec(sym, 100, TargetPrice);
-                        Console.WriteLine(m);
-                        sendMessage(m);
+                        if (countSent < 30)
+                        {
+                            double TargetPrice = snap.Close - (qhx.ATR * .25);
+                            TargetPrice = Ask + .03; //TESTING DELETE THIS LINE
+                            string m = $"B|{sym}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}|1000"; //TESTING = shour be OPG
+                            qhx.OpeningOrderMyID = OPGOrderID;
+                            OrderMap[OPGOrderID] = 0;
+                            OPGOrderID++;
+                            //qhx.PostExec(sym, 100, TargetPrice);
+                            Console.WriteLine(m);
+                            sendMessage(m);
+                            countSent++;
+                        }
 
                     }
 

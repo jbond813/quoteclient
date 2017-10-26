@@ -18,7 +18,7 @@ namespace GetCharts
             //symbols.AddRange((from s in File.ReadAllLines(@"c:\users\scott\downloads\amex.csv") select s.Split(',')[0]).Skip(1));
             //symbols = (from s in symbols select s.Replace("\"", "")).ToList<string>();
             //return symbols.ToArray();
-            string symbolstring = File.ReadAllText(@"c:\users\scott\downloads\SampleListStocks2.txt");
+            string symbolstring = File.ReadAllText(@"c:\users\scott\downloads\SampleListStocks.txt");
             char[] ss = { ' ' };
             string[] symbols = symbolstring.Split(ss, StringSplitOptions.RemoveEmptyEntries);
             return symbols;
