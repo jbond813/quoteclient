@@ -27,7 +27,7 @@ namespace MDPackets
 
 
         //private Int64 referenceNumber;
-        public string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 2,8).TrimEnd((Char)0); } set { } }
+        public override string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 2,8).TrimEnd((Char)0); } }
         public char Side { get {
                 char c = (char)rawPayload[10];
                 return  c==0?'B':'S';
@@ -41,6 +41,7 @@ namespace MDPackets
         public char BookID { get { return ASCIIEncoding.ASCII.GetChars(rawPayload, 42, 1)[0]; } set { } }
         public byte QuoteCondition { get { return rawPayload[43]; } set { } }
         public Int16 Flags { get { return BitConverter.ToInt16(rawPayload, 44); } set { } }
+
 
         public override string ToString()
         {

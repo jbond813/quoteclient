@@ -30,6 +30,13 @@ namespace MDPackets
         public int LimitOrderMyID;
         public int OpeningOrderMyID;
         public int OpeningOrderID;
+        public bool LimitOut = false;
+        public int StopOrderMyID;
+        public int StopOrderID;
+        public bool DeadOpen = false;
+        public bool DeadLimit = false;
+        public bool DeadStop = false;
+        public bool stopRequested = false;
         public void PostExec(string Symbol,int shares, double Price)
         {
             ExecutionPrice = Price;
@@ -85,16 +92,16 @@ namespace MDPackets
                 P1 = Current;
                 Current = new Candle() { time = DateTime.Now, High  = Double.MinValue, Low = Double.MaxValue};
                 Current.Update(p);
-                Console.WriteLine($"{p.Symbol} {P1}");
+                //Console.WriteLine($"{p.Symbol} {P1}");
             }
-            if(OpenShares > 0 && (DateTime.Now - ExecutionTime).TotalSeconds > 10) //TEST ONLY should be 75
+            if(OpenShares > 0 && (DateTime.Now - ExecutionTime).TotalSeconds > 75) //TEST ONLY should be 75
             {
                 if (P1 != null)
                 {
                     if (P1.Low != Double.MaxValue)
                     {
-                        //double how = P1.Low - (ATR * .15);
-                        double how = P1.Low; //Testing
+                        double how = P1.Low - (ATR * .15);
+                        //double how = P1.Low; //Testing
                         if(how > Stop)
                         {
                             Logger.WriteLine($"{p.Symbol} stop moving from {Stop} to {how}");
@@ -106,7 +113,7 @@ namespace MDPackets
                             if (Stop != 0 && p.Price < Stop)
                             {
                                 qtyToSell = OpenShares;
-                                OpenShares = 0;
+                                //OpenShares = 0;
                             }
                         }
                     }

@@ -27,7 +27,7 @@ namespace MDPackets
 
 
     //private Int64 referenceNumber;
-        public string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload,2,8).TrimEnd((char)0); } set { } }
+        public override string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload,2,8).TrimEnd((char)0); } }
         public Int64 ReferenceNumber { get { return BitConverter.ToInt64(rawPayload,14); } set { }}
         public double Price { get { return getPrice(rawPayload, 22); } set { } }
         public Int32 Size { get { return BitConverter.ToInt32(rawPayload, 30); } set { } }

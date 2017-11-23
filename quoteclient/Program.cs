@@ -26,7 +26,10 @@ namespace quoteclient
             return File.ReadAllBytes(directory + "raw0refresh.dat");
         }
         public static byte[] getsymbolRequest() {
-            return File.ReadAllBytes(directory + "rawpgrefresh.dat");
+            byte[] b = File.ReadAllBytes(directory + "rawpgrefresh.dat");
+            b[4] = 0x00;
+            b[5] = 0x00;
+            return b;
         }
         public static void updateSymbol(string symbol)
         {
@@ -76,8 +79,14 @@ namespace quoteclient
             //Packet.GetPacket(str);
             str.Flush();
 
-            byte[] last = null;
+            //byte[] last = null;
             InitSocket();
+            foreach(string sym in symbols)
+            {
+                string sl = "SYMBOLLIST";
+                sl += $"|{sym.Split(' ')[0]}";
+                sendMessage(sl);
+            }
             new Thread(MessageLoop).Start(str);
             new Thread(ReceiveServerMessages).Start();
             dict["BG"] = new QuoteHolder("BG 1.21 183869 61.75");
@@ -149,6 +158,10 @@ namespace quoteclient
                         {
                             qh.OpeningOrderID = theirid;
                         }
+                        if (qh.StopOrderMyID == myid)
+                        {
+                            qh.StopOrderID = theirid;
+                        }
                     }
                     if (OrderMap.ContainsKey(myid))
                     {
@@ -189,10 +202,16 @@ namespace quoteclient
                         Console.WriteLine($"{qh.OpeningOrderID}");
                         if (qh.OpeningOrderID == clientID)
                         {
+                            qh.DeadOpen = true;
                             int sharesToClose = quantity - openQuantity;
                             char closeSide = side == 'B' ? 'S' : 'B';
-                            double TargetPrice = qh.ExecutionPrice + .10;
-                            string m = $"{closeSide}|{symbol}|{0}|{0}|0|{TargetPrice.ToString("0.00")}|0|0|DAY|{OPGOrderID}|{sharesToClose}"; //TESTING = shour be OPG
+                            double TargetPrice = qh.PrevClose - .02; //testing
+                            Snapshot snap = qh.Resp[0].Snapshot;
+                            Double Bid = qh.L1 == null ? snap.Bid : qh.L1.Bid;
+                            Double Ask = qh.L1 == null ? snap.Ask : qh.L1.Ask;
+                            //string m = $"{closeSide}|{symbol}|{0}|{0}|0|{TargetPrice.ToString("0.00")}|0|0|DAY|{OPGOrderID}|{sharesToClose}"; //TESTING = shour be OPG
+                            string m = $"ORDER|S|{symbol}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}|{sharesToClose}";
+
                             qh.LimitOrderMyID = OPGOrderID;
                             qh.LimitPrice = TargetPrice;
                             OrderMap[OPGOrderID] = 0;
@@ -200,6 +219,22 @@ namespace quoteclient
                             //qhx.PostExec(sym, 100, TargetPrice);
                             Console.WriteLine(m);
                             sendMessage(m);
+                        }
+                        if (qh.LimitOrderID == clientID)
+                        {
+                            qh.LimitOut = true;
+                            qh.DeadLimit = true;
+                            if(qh.OpenShares > 0 && ! qh.stopRequested)
+                            {
+                                string m = SendStop(symbol);
+                                qh.stopRequested = true;
+                                sendMessage(m);
+                            }
+                            //int sharesToClose = quantity - openQuantity                        
+                        }
+                        if (qh.StopOrderID == clientID)
+                        {
+                            qh.DeadStop = true;
                         }
                     }
                 }
@@ -258,8 +293,8 @@ namespace quoteclient
         private static ConcurrentDictionary<string, QuoteHolder> dict = new ConcurrentDictionary<string, QuoteHolder>();
         static string watching = null;
         static bool T92750 = false;
-        //static DateTime dtt = DateTime.Now.Date.AddHours(8).AddMinutes(27).AddSeconds(50);
-        static DateTime dtt = DateTime.Now.AddSeconds(20); //TESTING USE ABOVE LINE
+        static DateTime dtt = DateTime.Now.Date.AddHours(8).AddMinutes(27).AddSeconds(50);
+        //static DateTime dtt = DateTime.Now.AddSeconds(20); //TESTING USE ABOVE LINE
 
         private static void MessageLoop(object o)
         {
@@ -276,13 +311,12 @@ namespace quoteclient
             DateTime ldt = DateTime.Now;
             QuoteHolder qh;
             QuoteHolder.Logger = new StreamWriter($@"{config.directory}fff\Q{DateTime.Now.ToString("HHmmss")}.txt");
-            new Thread(t => {
-                Thread.Sleep(1000);
-                QuoteHolder.Logger.Flush();
-            }).Start();
+            //new Thread(t => {
+            //    Thread.Sleep(1000);
+            //    QuoteHolder.Logger.Flush();
+            //}).Start();
             for (int i = 0 ;;i++)
             {
-                if (i % 10000 == 0) QuoteHolder.Logger.Flush();
                 //Packet p = new Packet(str);
                 Packet p = Packet.GetPacket(str);
                 if(!T92750 && DateTime.Now > dtt)
@@ -336,21 +370,10 @@ namespace quoteclient
                             qh = dict[ts];
                             int QtyToSell = qh.ProcessTrade(tp);
                             //Console.WriteLine($"{tp.Symbol} process Trade returned {QtyToSell}");
-                            if(QtyToSell > 0 && !qh.Closing && !ExistingPosition.ContainsKey(ts))
+                            if(QtyToSell > 0 && !qh.Closing && !qh.LimitOut && !ExistingPosition.ContainsKey(ts) && qh.DeadOpen)
                             {
-                                QuoteHolder qhx = dict[tp.Symbol];
-                                RespRefreshSymbolPacket.SnapShot snap = qhx.Resp[0].Snapshot; //DANGEROUS
-                                //double TargetPrice = qhx.Resp[0].Snapshot.Close - (qhx.ATR * .25);
-                                double Ask = qhx.L1 != null ? qhx.L1.Ask : snap.Ask;
-                                double Bid = qhx.L1 != null ? qhx.L1.Bid : snap.Bid;
-                                double TargetPrice = Bid - .03; //TESTING DELETE THIS LINE
-                                //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY"; //TESTING = shour be OPG
-                                //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}"; //TESTING = shour be OPG
-                                string m = $"STOP|{tp.Symbol}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{qhx.LimitOrderID}|{QtyToSell}|S|{qhx.OpeningOrderID}"; //TESTING = shour be OPG
-                                Console.WriteLine($"STOP {tp.Symbol} stopped out {tp.Price} stopPrice {qhx.Stop}");
-                                OrderMap[OPGOrderID] = 0;
-                                OPGOrderID++;
-
+                                //string m = SendStop(ts);
+                                string m = $"CANCEL|{ts}|{qh.LimitOrderID}";
                                 //qhx.PostExec(sym, 100, TargetPrice);
                                 Console.WriteLine(m);
                                 qh.Closing = true;
@@ -377,7 +400,7 @@ namespace quoteclient
                             }
                             catch (Exception)
                             {
-                                Console.WriteLine("unsolicitied pack");
+                                Console.WriteLine($"unsolicitied pack {qs}");
                             }
                             break;
                         case Packet.PacketType.M_BOOK_NEW_QUOTE:
@@ -398,6 +421,30 @@ namespace quoteclient
                 }
             }
         }
+
+        private static string SendStop(string symbol)
+        {
+         
+            QuoteHolder qhx = dict[symbol];
+            qhx.stopRequested = true;
+            int QtyToSell = qhx.OpenShares;
+            Snapshot snap = qhx.Resp[0].Snapshot; //DANGEROUS
+                                                                          //double TargetPrice = qhx.Resp[0].Snapshot.Close - (qhx.ATR * .25);
+            double Ask = qhx.L1 != null ? qhx.L1.Ask : snap.Ask;
+            double Bid = qhx.L1 != null ? qhx.L1.Bid : snap.Bid;
+            double TargetPrice = Bid - .35;
+                                            //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY"; //TESTING = shour be OPG
+                                            //string m = $"S|{tp.Symbol}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}"; //TESTING = shour be OPG
+//            string m = $"STOP|{symbol}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{qhx.LimitOrderID}|{QtyToSell}|S|{qhx.OpeningOrderID}"; //TESTING = shour be OPG
+            string m = $"ORDER|S|{symbol}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}|{qhx.OpenShares}"; //TESTING = shour be OPG
+
+            Console.WriteLine($"STOP {symbol} stopped out {qhx.Stop} stopPrice {qhx.Stop}");
+            qhx.StopOrderMyID = OPGOrderID;
+            OrderMap[OPGOrderID] = 0;
+            OPGOrderID++;
+            return m;
+        }
+
         private static ConcurrentDictionary<int,int> OrderMap = new ConcurrentDictionary<int, int>();
         private static HashSet<int> Limit = new HashSet<int>();
         private static int OPGOrderID = 20000000 + (int)(DateTime.Now.Ticks % 9999);
@@ -415,7 +462,7 @@ namespace quoteclient
                 double Ask = 0;
                 if (qhx.Resp.Count > 0 && qhx.Resp[0].Snapshot != null)
                 {
-                    RespRefreshSymbolPacket.SnapShot snap = qhx.Resp[0].Snapshot;
+                    Snapshot snap = qhx.Resp[0].Snapshot;
                     if (qhx.L1 == null)
                     {
                         Bid = snap.Bid;
@@ -426,14 +473,26 @@ namespace quoteclient
                         Bid = qhx.L1.Bid;
                         Ask = qhx.L1.Ask;
                     }
-                    //if (qhx.Volume < 100 && Ask > snap.Close)
-                    if (true && !ExistingPosition.ContainsKey(sym)) //TESTING USE ABOVE LINE
+                    if (qhx.Volume < 100 && Ask > snap.Close)
+                    //if (true && !ExistingPosition.ContainsKey(sym)) //TESTING USE ABOVE LINE
                     {
-                        if (countSent < 30)
+                        if (countSent < 1000)
                         {
-                            double TargetPrice = snap.Close - (qhx.ATR * .25);
-                            TargetPrice = Ask + .03; //TESTING DELETE THIS LINE
-                            string m = $"B|{sym}|{snap.Close}|{qhx.Volume}|{qhx.ATR.ToString("0.00")}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}|1000"; //TESTING = shour be OPG
+                            double TargetPrice = snap.Close - (qhx.ATR * 1.1); //should be .25
+                            //char side = toks[1].c_str()[0];
+                            //const char* sym = toks[2].c_str();
+                            //double price = atof(toks[4].c_str());
+                            //double bid = atof(toks[5].c_str());
+                            //double ask = atof(toks[6].c_str());
+                            //unsigned char TIF = TIF_OPG;
+                            //if (!strcmp(toks[7].c_str(), "DAY")) TIF = TIF_DAY;
+                            //int myid = atol(toks[8].c_str());
+                            //int qty = atol(toks[9].c_str());
+                            //TargetPrice = Bid + .01; //TESTING DELETE THIS LINE
+                            //string m = $"ORDER|B|{sym}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|OPG|{OPGOrderID}|100";
+                            //string m = $"ORDER|B|{sym}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|5|{OPGOrderID}|1"; //TESTING = shour be OPG
+                            string m = $"ORDER|B|{sym}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|OPG|{OPGOrderID}|1"; //PROD
+                            //string m = $"ORDER|B|{sym}|{TargetPrice.ToString("0.00")}|{Bid.ToString("0.00")}|{Ask.ToString("0.00")}|DAY|{OPGOrderID}|100"; //TESTING = shour be OPG
                             qhx.OpeningOrderMyID = OPGOrderID;
                             OrderMap[OPGOrderID] = 0;
                             OPGOrderID++;

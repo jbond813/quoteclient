@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace MDPackets
 {
-    public class Packet
+    public abstract class Packet
     {
         public static Stream audit = null;
         protected DateTime getTime(byte[] b, int off)
@@ -69,16 +71,53 @@ namespace MDPackets
             // Trades
             M_TRADE_REPORT,
             M_TRADE_CANCEL_ERROR,
-            M_TRADE_CORRECTION
+            M_TRADE_CORRECTION,
+            ORDER_SENT,
+            ORDER_DEAD,
+            ORDER_EXECUTED,
+            POSITION
         };
         public ushort length;
         public PacketType packetType;
         public byte[] rawPayload;
+        public abstract string Symbol { get;  }
         public override string ToString()
         {
             return "packetType " + packetType + " packetLength " + length;
         }
         public Packet() { }
+        public static Packet GetPacket(Socket socket)
+        {
+            EndPoint rep = new IPEndPoint(IPAddress.Any, 0);
+            int n;
+            byte[] buff = new byte[100000];
+            n = socket.ReceiveFrom(buff, ref rep);
+            string message = ASCIIEncoding.ASCII.GetString(buff, 0, n);
+            string[] toks = message.Split('|');
+            Packet rv = null;
+            switch(toks[0])
+            {
+                case "SENTORDER":
+                    rv = new OrderSent(toks);
+                    break;
+                case "DEAD":
+                    rv = new OrderDead(toks);
+                    break;
+                case "TM_NEW_EXECUTION":
+                    rv = new OrderExecuted(toks);
+                    break;
+                default:
+                    foreach(string t in toks)
+                    {
+                        Console.Write(t + "|");
+                    }
+                    Console.WriteLine();
+                    break;
+            }
+            return rv;
+        }
+        public Stock Stock;
+
         public static Packet GetPacket(Stream str)
         {
             byte[] lbuff = new byte[2];
@@ -153,7 +192,7 @@ namespace MDPackets
                     rv = new TradeReportPacket(length, pt, pl);
                     break;
                 default:
-                    return new Packet(length, pt, pl);
+                    return null;// new Packet(length, pt, pl);
             }
 
             return rv;

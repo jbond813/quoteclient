@@ -179,7 +179,7 @@ namespace TestClient
                         QuoteHolder qhx = dict[sym];
                         if (qhx.Resp.Count > 0 && qhx.Resp[0].Snapshot != null)
                         {
-                            RespRefreshSymbolPacket.SnapShot snap = qhx.Resp[0].Snapshot;
+                            Snapshot snap = qhx.Resp[0].Snapshot;
                             Double Ask = 0;
                             Double Bid = 0;
                             if (qhx.L1 == null)

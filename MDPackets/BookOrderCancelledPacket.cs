@@ -27,7 +27,7 @@ namespace MDPackets
 
         //private Int64 referenceNumber;
         public DateTime Time { get { return getTime(rawPayload, 2); } set { } }
-        public string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0); } set { } }
+        public override string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0); } }
         public Int64 ReferenceNumber { get { return BitConverter.ToInt64(rawPayload, 14); } set { } }
         public override string ToString()
         {

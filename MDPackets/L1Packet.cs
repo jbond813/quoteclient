@@ -21,7 +21,7 @@ namespace MDPackets
             length = len;
             packetType = (PacketType)pt;
         }
-        private DateTime time;
+        //private DateTime time;
 
         private double bid;
 
@@ -61,14 +61,14 @@ namespace MDPackets
         }
         private String symbol;
 
-        public String Symbol
+        public override String Symbol
         {
             get {
                 symbol = ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0);
                 return symbol;
             }
         }
-        private DateTime myVar;
+        //private DateTime myVar;
 
         public DateTime Time
         {

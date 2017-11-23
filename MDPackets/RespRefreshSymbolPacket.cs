@@ -9,47 +9,12 @@ namespace MDPackets
 {
     public class RespRefreshSymbolPacket : Packet
     {
-        public class SnapShot
-        {
-            public string Symbol;
-            public double Bid;
-            public double Ask;
-            public double Last;
-            public double High;
-            public double Low;
-            public double Open;
-            public double Close;
-            public int Volume;
-            public int BidSize;
-            public int AskSize;
-            private RespRefreshSymbolPacket rp;
-            public SnapShot(RespRefreshSymbolPacket rp)
-            {
-                this.rp = rp;
-                Volume = BitConverter.ToInt32(rp.rawPayload, 62);
-                //int vol = BitConverter.ToInt32(rp.rawPayload, 66);
-                Bid = rp.getPrice(rp.rawPayload, 70);
-                Ask = rp.getPrice(rp.rawPayload, 78);
-                Last = rp.getPrice(rp.rawPayload, 86);
-                Low = rp.getPrice(rp.rawPayload, 118);
-                High = rp.getPrice(rp.rawPayload, 110);
-                Open = rp.getPrice(rp.rawPayload, 94);
-                Close = rp.getPrice(rp.rawPayload, 102);
-                BidSize = BitConverter.ToInt32(rp.rawPayload, 126);
-                AskSize = BitConverter.ToInt32(rp.rawPayload, 130);
-
-            }
-            public override string ToString()
-            {
-                return $"REFL1 {DateTime.Now.ToString("HH:mm:ss.fff")} Bid {rp.Symbol} {Bid} ask {Ask} last {Last} hi {High} vol {Volume} lo {Low} close {Close} open {Open} bidsize {BidSize}  asksize {AskSize}";
-            }
-        }
         public class BookTrade
         {
 
         }
         static int totalPackets = 0;
-        public SnapShot Snapshot = null;
+        public Snapshot Snapshot = null;
         public RespRefreshSymbolPacket(ushort len, ushort pt, byte[] pl)
         {
             rawPayload = pl;
@@ -74,7 +39,7 @@ namespace MDPackets
             }
             if ((steps & SRS_LEVEL1) != 0)
             {
-                Snapshot = new SnapShot(this);
+                Snapshot = new Snapshot(this);
             }
             if ((steps & SRS_LEVEL2) != 0)
             {
@@ -142,7 +107,7 @@ namespace MDPackets
         //unsigned char m_bookID;
         //char m_marketStatus;
         public UInt32 RequestID { get { return BitConverter.ToUInt32(rawPayload,2); } set { } }
-        public string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0); } set { } }
+        public override string Symbol { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 6, 8).TrimEnd((Char)0); }  }
         public UInt16 SymbolIndex { get { return BitConverter.ToUInt16(rawPayload, 14); } set { } }
         public byte Steps { get { return rawPayload[14]; } set { } }
         public byte Flags { get { return rawPayload[17]; } set { } }
