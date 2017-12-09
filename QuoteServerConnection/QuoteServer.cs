@@ -32,6 +32,7 @@ namespace MarketData
 
         public QuoteServer(BlockingCollection<Packet> queue)
         {
+            string stsr = ASCIIEncoding.ASCII.GetString(connectRequest);
             Queue = queue;
             TcpClient cl = new TcpClient();
             cl.Connect(config.quoteServerEP);

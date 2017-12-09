@@ -105,7 +105,7 @@ namespace Modules
             QuoteServer qs = new QuoteServer(queue);
             ExecutionServer es = new ExecutionServer(queue);
             //int ordID = es.SendOrder('B',"AAPL",172.30,172.20,173.00,"OPG",1);
-            //qs.Subcribe("AAPL");
+            qs.Subcribe("AAPL");
             for(;;)
             {
                 Packet p = queue.Take();

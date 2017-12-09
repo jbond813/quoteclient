@@ -35,7 +35,10 @@ namespace MDPackets.Tests
         [TestMethod()]
         public void ToStringTest()
         {
-            Assert.AreEqual("PacketType=M_LEVEL1 Symbol=SPY Bid=249.08 Ask=249.10 BidSize=100 AskSize=10000 Time=10/22/2017 8:53:57 AM", getPacket().ToString());
+            Console.WriteLine(getPacket().ToString());
+            string dt = DateTime.Now.Date.AddHours(8).AddMinutes(53).AddSeconds(57).AddMilliseconds(86).ToString("MM/d/yyyy h:mm:ss tt");
+            Console.WriteLine(dt);
+            Assert.AreEqual("PacketType=M_LEVEL1 Symbol=SPY Bid=249.08 Ask=249.10 BidSize=100 AskSize=10000 Time=" + dt, getPacket().ToString());
         }
     }
 }
