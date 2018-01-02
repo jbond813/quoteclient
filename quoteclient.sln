@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewQuoteClient", "NewQuoteC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketData", "QuoteServerConnection\MarketData.csproj", "{A7FC3038-9A6E-43C6-B168-28DC2518DEAC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradingInterfaces", "TradingInterfaces\TradingInterfaces.csproj", "{08D637A4-14A8-4E93-B4AC-CA725146053C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -161,6 +163,14 @@ Global
 		{A7FC3038-9A6E-43C6-B168-28DC2518DEAC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A7FC3038-9A6E-43C6-B168-28DC2518DEAC}.Release|x64.ActiveCfg = Release|Any CPU
 		{A7FC3038-9A6E-43C6-B168-28DC2518DEAC}.Release|x64.Build.0 = Release|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Debug|x64.Build.0 = Debug|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Release|x64.ActiveCfg = Release|Any CPU
+		{08D637A4-14A8-4E93-B4AC-CA725146053C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

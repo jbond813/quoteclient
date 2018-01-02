@@ -23,12 +23,13 @@ namespace MDPackets.Tests
         [TestMethod()]
         public void L1PacketTest()
         {
-            L1Packet l1p = getPacket();
-            Assert.AreEqual(l1p.Ask, 249.10);
-            Assert.AreEqual(l1p.Bid, 249.08);
-            Assert.AreEqual(l1p.BidSize, 100);
-            Assert.AreEqual(l1p.AskSize, 10000);
-            DateTime dt = DateTime.Now.Date.AddHours(8).AddMinutes(53).AddSeconds(57).AddMilliseconds(86);
+            //L1Packet l1p = getPacket();
+            L1Packet l1p = BuildFakeData.BuildFakeL1Packet("AAPL", 100.02, 110.34, 500, 600, DateTime.Today.AddHours(8.5));
+            Assert.AreEqual(l1p.Bid, 100.02);
+            Assert.AreEqual(l1p.Ask, 110.34);
+            Assert.AreEqual(l1p.BidSize, 500);
+            Assert.AreEqual(l1p.AskSize, 600);
+            DateTime dt = DateTime.Now.Date.AddHours(8).AddMinutes(30);
             Assert.AreEqual(l1p.Time, dt);            
         }
 
@@ -36,7 +37,7 @@ namespace MDPackets.Tests
         public void ToStringTest()
         {
             Console.WriteLine(getPacket().ToString());
-            string dt = DateTime.Now.Date.AddHours(8).AddMinutes(53).AddSeconds(57).AddMilliseconds(86).ToString("MM/d/yyyy h:mm:ss tt");
+            string dt = DateTime.Now.Date.AddHours(8).AddMinutes(53).AddSeconds(57).AddMilliseconds(86).ToString("M/d/yyyy h:mm:ss tt");
             Console.WriteLine(dt);
             Assert.AreEqual("PacketType=M_LEVEL1 Symbol=SPY Bid=249.08 Ask=249.10 BidSize=100 AskSize=10000 Time=" + dt, getPacket().ToString());
         }

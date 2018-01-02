@@ -12,5 +12,6 @@ namespace Modules
         public TIF Tif;
         public double Limit;
         public int Shares;
+        public char Side;
     }
 }

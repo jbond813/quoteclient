@@ -42,6 +42,7 @@
   <ItemGroup>
     <Compile Include="Candle.cs" />
     <Compile Include="IQuote.cs" />
+    <Compile Include="IQuoteServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuoteServer.cs" />
   </ItemGroup>

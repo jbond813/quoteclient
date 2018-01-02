@@ -14,9 +14,10 @@ namespace Modules
         public Order StopOrder = null;
         public int Position;
         public Stock Stock;
-        public StrategyState(IStrategy strat)
+        public StrategyState(IStrategy strat,Stock stock)
         {
             strategy = strat;
+            Stock = stock;
         }
     }
 }

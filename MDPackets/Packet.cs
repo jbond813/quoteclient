@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,20 +16,21 @@ namespace MDPackets
         protected DateTime getTime(byte[] b, int off)
         {
             int t = BitConverter.ToInt32(b, off);
-            int tmp;
-            tmp = t;
-            int h = tmp / 3600000;
-            tmp -= (h * 3600000);
-            int m = tmp / 60000;
-            tmp -= (m * 60000);
-            int s = tmp / 1000;
-            int f = tmp % 1000;
-            string rvx = h.ToString("00:") + m.ToString("00:") + s.ToString("00") + "." + f.ToString("000");
-            DateTime rv = DateTime.Today;
-            rv = rv.Add(new TimeSpan(h, m, s));
-            rv = rv.AddMilliseconds(f);
-            return rv;
+            //int tmp;
+            //tmp = t;
+            //int h = tmp / 3600000;
+            //tmp -= (h * 3600000);
+            //int m = tmp / 60000;
+            //tmp -= (m * 60000);
+            //int s = tmp / 1000;
+            //int f = tmp % 1000;
+            ////string rvx = h.ToString("00:") + m.ToString("00:") + s.ToString("00") + "." + f.ToString("000");
+            //DateTime rv = DateTime.Today;
+            //rv = rv.Add(new TimeSpan(h, m, s));
+            //rv = rv.AddMilliseconds(f);
             //return rv;
+            //return rv;
+            return DateTime.Today.AddMilliseconds(t);
         }
         public double getPrice(byte[] b, int off)
         {
@@ -116,7 +118,7 @@ namespace MDPackets
             }
             return rv;
         }
-        public Stock Stock;
+        //public Stock Stock;
 
         public static Packet GetPacket(Stream str)
         {

@@ -15,7 +15,7 @@ namespace Modules
         OrderCondition GetEntryCondition(StrategyState s);
         OrderCondition GetLimitConditions(StrategyState s);
         OrderCondition GetStopConditions(StrategyState s);
-        void AdjustStop(Candle newCandle);
+       // void AdjustStop(Candle newCandle);
         OrderCondition GetCloseAllCondition(StrategyState s);
     }
 

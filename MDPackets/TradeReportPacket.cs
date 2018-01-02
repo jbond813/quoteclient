@@ -31,17 +31,21 @@ namespace MDPackets
         public Int64 ReferenceNumber { get { return BitConverter.ToInt64(rawPayload, 14); } set { } }
         public double Price { get { return getPrice(rawPayload, 22); } set { } }
         public int Size { get { return BitConverter.ToInt32(rawPayload,30); } set { } }
-        public string MMID { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 34, 4); } set { } }
+        //public string MMID { get { return ASCIIEncoding.ASCII.GetString(rawPayload, 34, 4); } set { } }
         public DateTime Time2
         {
-            get { return getTime(rawPayload, 34); }
+            get { return getTime(rawPayload, 38); }
             set { }
+        }
+        public int Minute()
+        {
+            return (int)Math.Floor(Time2.TimeOfDay.TotalMinutes);
         }
         public override string ToString()
         {
             return new StringBuilder().Append("Trade Report ").Append(Time.ToString("HH:mm:ss.fff")).Append(" ").Append(Size).Append(" ")
                 .Append(Symbol).Append("@")
-                .Append(Price).Append(" ").Append(MMID).ToString();
+                .Append(Price).ToString();
         }
     }
 }

@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MDPackets
+namespace TradingInterfaces
 {
-    public class Stock
+    public interface ITimeProvider
     {
-        public L1Packet L1;
-        public int Volume;
-        public Snapshot Snapshot;
+        DateTime GetCurrentTime();
     }
 }

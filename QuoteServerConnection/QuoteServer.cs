@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace MarketData
 {
-    public class QuoteServer
+    public class QuoteServer : IQuoteServer
     {
         class config
         {
@@ -49,7 +49,7 @@ namespace MarketData
                 }
             }).Start();
         }
-        public void Subcribe(string symbol)
+        public void Subscribe(string symbol)
         {
             byte[] req = new byte[refreshRequest.Length];
             Array.Copy(refreshRequest, req, req.Length);

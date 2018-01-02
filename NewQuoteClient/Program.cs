@@ -12,6 +12,7 @@ using System.Collections.Concurrent;
 using MarketData;
 using Modules;
 
+
 namespace NewQuoteClient
 {
     static class config
@@ -56,8 +57,10 @@ namespace NewQuoteClient
         static Dictionary<string, DateTime> outstanding = new Dictionary<string, DateTime>();
         static void Main(string[] args)
         {
-            //BlockingCollection<Packet> queue = new BlockingCollection<Packet>();
-            StrategyRunner sr = new StrategyRunner();
+            BlockingCollection<Packet> queue = new BlockingCollection<Packet>();
+            ExecutionServer es = new ExecutionServer(queue);
+            QuoteServer qs = new QuoteServer(queue);
+            StrategyRunner sr = new StrategyRunner(es, qs, new TimeProvider(), queue);
             sr.Run();
             for(;;)
             {

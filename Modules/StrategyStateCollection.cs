@@ -6,16 +6,18 @@ using System.Threading.Tasks;
 
 namespace Modules
 {
-    class StrategyStateCollection
+    public class StrategyStateCollection
     {
         public Dictionary<string, StrategyState> StrategyStates;
         public IStrategy Strategy;
-        public StrategyStateCollection(IStrategy strat,string[] candidateSymbols)
+        public bool hasEvaluatedEntry = false;
+        public StrategyStateCollection(IStrategy strat,Stock[] stocks)
         {
+            Strategy = strat;
             StrategyStates = new Dictionary<string, StrategyState>();
-            foreach(string can in candidateSymbols)
+            foreach(Stock stock in stocks)
             {
-                StrategyStates[can] = new StrategyState(strat);
+                StrategyStates[stock.Symbol] = new StrategyState(strat, stock);
             }
         }
     }
